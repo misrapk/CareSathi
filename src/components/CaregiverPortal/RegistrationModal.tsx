@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CaregiverProfile, CaregiverQualification } from '../../types';
+import { CaregiverProfile, CaregiverQualification, SathiSkillBadge } from '../../types';
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -10,7 +10,8 @@ import {
   FileCheck, 
   Phone,
   Heart,
-  BadgeCheck
+  BadgeCheck,
+  Award
 } from 'lucide-react';
 
 interface RegistrationModalProps {
@@ -27,6 +28,10 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [gender, setGender] = useState<'Male' | 'Female'>('Male');
   const [phone, setPhone] = useState('+91 ');
   const [qualification, setQualification] = useState<CaregiverQualification>('GDA Certified (General Duty Assistant)');
+  const [selectedSkills, setSelectedSkills] = useState<SathiSkillBadge[]>([
+    'Night Vigil Specialist',
+    'GDA Clinical Assistant'
+  ]);
   const [experienceYears, setExperienceYears] = useState<number>(3);
   const [hourlyRate, setHourlyRate] = useState<number>(150);
   const [currentHospitalNearby, setCurrentHospitalNearby] = useState('AIIMS, New Delhi');
@@ -37,6 +42,23 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [consentPolice, setConsentPolice] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const [registeredBadgeId, setRegisteredBadgeId] = useState('');
+
+  const availableBadges: SathiSkillBadge[] = [
+    'Night Vigil Specialist',
+    'Post-Op Mobility',
+    'Dementia & Elder Companion',
+    'GDA Clinical Assistant',
+    'Hindi & Regional Fluent',
+    'IV & Vitals Vigilance'
+  ];
+
+  const toggleSkillBadge = (badge: SathiSkillBadge) => {
+    if (selectedSkills.includes(badge)) {
+      setSelectedSkills(selectedSkills.filter(b => b !== badge));
+    } else {
+      setSelectedSkills([...selectedSkills, badge]);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +73,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       age,
       experienceYears,
       qualification,
+      skills: selectedSkills.length > 0 ? selectedSkills : ['GDA Clinical Assistant'],
       aadhaarVerified: true,
       policeVerificationPassed: true,
       hospitalPassApproved: true,

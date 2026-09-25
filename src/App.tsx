@@ -6,6 +6,7 @@ import {
   AuthUser
 } from './types';
 import { INITIAL_CAREGIVERS } from './data/mockData';
+import { getCurrentUser, saveCurrentUser, logoutUser } from './data/localAuth';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './components/HomePage';
 import { BookingForm } from './components/FamilyPortal/BookingForm';
@@ -21,7 +22,9 @@ import {
   CheckCircle2, 
   Building2, 
   Stethoscope,
-  UserCheck
+  UserCheck,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 
 export default function App() {
@@ -43,10 +46,13 @@ export default function App() {
     return false;
   });
 
-  // User Auth State
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  // User Auth State from Local Storage Database
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    return getCurrentUser();
+  });
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'join'>('signin');
+  const [authModalRole, setAuthModalRole] = useState<'family' | 'attendant'>('family');
 
   // Sync dark class on document element
   useEffect(() => {
@@ -59,6 +65,17 @@ export default function App() {
     }
   }, [isDark]);
 
+  // Check URL query parameters for live watch links
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const watchId = params.get('watch');
+      if (watchId) {
+        showToast('Connecting to Multi-Family Live Bedside Watch Stream...');
+      }
+    }
+  }, []);
+
   const toggleDarkMode = () => {
     setIsDark(prev => !prev);
   };
@@ -67,12 +84,25 @@ export default function App() {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
-    }, 4000);
+    }, 4500);
   };
 
   // Generate 4-digit OTP
   const generateOtp = () => {
     return Math.floor(1000 + Math.random() * 9000).toString();
+  };
+
+  // Safe navigation handler enforcing login for booking and attendant mode
+  const handleNavigateView = (view: 'home' | 'family' | 'partner' | 'register' | 'safety') => {
+    if (!currentUser && (view === 'family' || view === 'partner' || view === 'register')) {
+      const targetRole = view === 'partner' || view === 'register' ? 'attendant' : 'family';
+      setAuthModalRole(targetRole);
+      setAuthModalMode('signin');
+      setAuthModalOpen(true);
+      showToast(`Please sign in or create an account to access ${view === 'family' ? 'booking' : 'attendant'} features.`);
+      return;
+    }
+    setCurrentView(view);
   };
 
   // Step 1: Family submits booking request
@@ -81,26 +111,56 @@ export default function App() {
   ) => {
     setIsDispatching(true);
     const newOtp = generateOtp();
+    const isNightShift = formData.isNightVigil || formData.shiftType === 'night_vigil';
+
+    const initialCareLogs: CareLogItem[] = [
+      {
+        id: `log-init-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        note: `Booking request raised for ${formData.patientName} (${formData.wardRoomBed}). Shift: ${isNightShift ? 'Overnight Night Vigil (8 PM - 8 AM)' : 'Standard Hourly'}. Required Badge: ${formData.requiredSkillBadge || 'Any'}.`,
+        category: 'general',
+        loggedBy: 'CareSathi Dispatch',
+      },
+    ];
+
+    if (isNightShift) {
+      initialCareLogs.unshift({
+        id: `log-vigil-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        note: '🌙 Night Vigil Protocol Activated: Mandatory 90-minute awake & vitals checks registered for assigned CareSathi.',
+        category: 'awake_check',
+        loggedBy: 'Vigil System',
+      });
+    }
+
     const newBooking: PatientBookingRequest = {
       ...formData,
       id: `CS-REQ-${Date.now()}`,
       requestedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'searching',
       startOtp: newOtp,
-      careLogs: [
+      careLogs: initialCareLogs,
+      familyWatchMembers: [
         {
-          id: `log-init-${Date.now()}`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          note: `Booking request raised for ${formData.patientName} (${formData.wardRoomBed}). Attendant pass available: ${formData.attendantPassAvailable ? 'Yes' : 'To be collected'}.`,
-          category: 'general',
-          loggedBy: 'System Dispatch',
+          id: 'watch-1',
+          name: formData.requesterName || (currentUser?.name || 'Primary Family'),
+          relation: `${formData.requesterRelation || 'Family'} (Booker)`,
+          city: formData.hospitalCity,
+          joinedAt: 'Active now',
         },
-      ],
+        {
+          id: 'watch-2',
+          name: 'Priya Verma',
+          relation: 'Daughter (NRI)',
+          city: 'California, USA',
+          joinedAt: 'Connected to live stream',
+        }
+      ]
     };
 
     setActiveBooking(newBooking);
     setIsDispatching(false);
-    showToast('Dispatching request to nearest verified CareSathis!');
+    showToast(isNightShift ? 'Dispatching request to nearest Night Vigil Specialists!' : 'Dispatching request to nearest verified CareSathis!');
   };
 
   // Step 2: Attendant matches (either auto-matched or manual select or Partner accepted)
@@ -113,14 +173,14 @@ export default function App() {
       matchedCaregiverId: caregiver.id,
       matchedCaregiver: caregiver,
       careLogs: [
-        ...activeBooking.careLogs,
         {
           id: `log-matched-${Date.now()}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          note: `${caregiver.name} (Badge #${caregiver.badgeId}, ${caregiver.experienceYears}y exp) accepted duty. En route to ${activeBooking.wardRoomBed}. ETA: ${caregiver.etaMinutes} mins.`,
+          note: `${caregiver.name} (Badge #${caregiver.badgeId}, ${caregiver.skills.join(', ')}) accepted duty. En route to ${activeBooking.wardRoomBed}. ETA: ${caregiver.etaMinutes} mins.`,
           category: 'general',
           loggedBy: caregiver.name,
         },
+        ...activeBooking.careLogs,
       ],
     };
 
@@ -139,7 +199,6 @@ export default function App() {
         status: 'in_progress',
         dutyStartedAt: now,
         careLogs: [
-          ...activeBooking.careLogs,
           {
             id: `log-start-${Date.now()}`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -147,6 +206,7 @@ export default function App() {
             category: 'general',
             loggedBy: activeBooking.matchedCaregiver?.name || 'CareSathi',
           },
+          ...activeBooking.careLogs,
         ],
       };
       setActiveBooking(updated);
@@ -159,7 +219,7 @@ export default function App() {
   // Add real-time care log note
   const handleAddCareLog = (
     note: string,
-    category: 'vitals' | 'food' | 'mobility' | 'medication' | 'nurse' | 'general'
+    category: 'vitals' | 'food' | 'mobility' | 'medication' | 'nurse' | 'general' | 'awake_check'
   ) => {
     if (!activeBooking) return;
 
@@ -175,7 +235,7 @@ export default function App() {
       ...activeBooking,
       careLogs: [newLogItem, ...activeBooking.careLogs],
     });
-    showToast('Activity logged for patient family.');
+    showToast('Activity logged for all connected family watchers.');
   };
 
   const handleAddFamilyNote = (note: string) => {
@@ -193,7 +253,7 @@ export default function App() {
       ...activeBooking,
       careLogs: [newLogItem, ...activeBooking.careLogs],
     });
-    showToast('Instruction sent to attendant.');
+    showToast('Message sent to attendant.');
   };
 
   // End duty flow
@@ -217,12 +277,16 @@ export default function App() {
     showToast(`CareSathi partner profile for ${newSathi.name} registered successfully!`);
   };
 
-  const handleOpenAuth = (mode: 'signin' | 'join') => {
+  const handleOpenAuth = (mode: 'signin' | 'join', role?: 'family' | 'attendant') => {
     setAuthModalMode(mode);
+    if (role) {
+      setAuthModalRole(role);
+    }
     setAuthModalOpen(true);
   };
 
   const handleAuthSuccess = (user: AuthUser) => {
+    saveCurrentUser(user);
     setCurrentUser(user);
     setAuthModalOpen(false);
     showToast(`Welcome ${user.name}! Signed in as ${user.role === 'family' ? 'Family Requester' : 'Attendant Partner'}.`);
@@ -235,8 +299,10 @@ export default function App() {
   };
 
   const handleSignOut = () => {
+    logoutUser();
     setCurrentUser(null);
-    showToast('Signed out of CareSathi.');
+    setCurrentView('home');
+    showToast('Signed out of CareSathi. Returning to Home.');
   };
 
   return (
@@ -245,11 +311,15 @@ export default function App() {
       {/* Navigation Header */}
       <Navbar
         currentView={currentView}
-        onSelectView={setCurrentView}
+        onSelectView={handleNavigateView}
         hasActiveBooking={!!activeBooking}
         onJumpToActive={() => {
-          if (activeBooking?.status === 'in_progress' || activeBooking?.status === 'matched') {
-            setCurrentView('family');
+          if (currentUser) {
+            if (activeBooking?.status === 'in_progress' || activeBooking?.status === 'matched') {
+              setCurrentView('family');
+            }
+          } else {
+            handleOpenAuth('signin', 'family');
           }
         }}
         activeOtp={activeBooking?.startOtp}
@@ -271,19 +341,62 @@ export default function App() {
       {/* Main Content Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         
-        {/* VIEW 0: MINIMAL & MODERN HOME PAGE */}
+        {/* VIEW 0: MINIMAL & MODERN HOME PAGE (ALWAYS ACCESSIBLE) */}
         {currentView === 'home' && (
           <HomePage
-            onBookForPatient={() => setCurrentView('family')}
-            onAttendantMode={() => setCurrentView('partner')}
+            onBookForPatient={() => {
+              if (currentUser) {
+                setCurrentView('family');
+              } else {
+                handleOpenAuth('signin', 'family');
+              }
+            }}
+            onAttendantMode={() => {
+              if (currentUser) {
+                setCurrentView('partner');
+              } else {
+                handleOpenAuth('signin', 'attendant');
+              }
+            }}
             onOpenSafety={() => setCurrentView('safety')}
             onOpenAuth={handleOpenAuth}
             isAuthenticated={!!currentUser}
           />
         )}
 
-        {/* VIEW 1: FAMILY / PATIENT BOOKING MODE */}
-        {currentView === 'family' && (
+        {/* AUTH GATE CHECK: IF ATTEMPTING PROTECTED VIEW WITHOUT LOGIN */}
+        {!currentUser && (currentView === 'family' || currentView === 'partner' || currentView === 'register') && (
+          <div className="max-w-md mx-auto my-12 p-8 bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4 shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock className="w-7 h-7" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-bold text-lg text-stone-900 dark:text-white">
+                Sign In Required to Access Portal
+              </h3>
+              <p className="text-xs text-stone-500 dark:text-stone-400">
+                To request hourly hospital attendants or accept bedside duties, please sign in or create a free account.
+              </p>
+            </div>
+            <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+              <button
+                onClick={() => handleOpenAuth('signin', currentView === 'partner' ? 'attendant' : 'family')}
+                className="flex-1 py-2.5 bg-teal-800 hover:bg-teal-900 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setCurrentView('home')}
+                className="py-2.5 px-4 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Back to Home
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 1: FAMILY / PATIENT BOOKING MODE (PROTECTED: REQUIRES LOGIN) */}
+        {currentUser && currentView === 'family' && (
           <div className="space-y-8">
             
             {/* Sub-view: Active booking in progress or matched */}
@@ -355,8 +468,8 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 2: CAREGIVER PARTNER (ATTENDANT) MODE */}
-        {currentView === 'partner' && (
+        {/* VIEW 2: CAREGIVER PARTNER (ATTENDANT) MODE (PROTECTED: REQUIRES LOGIN) */}
+        {currentUser && currentView === 'partner' && (
           <div className="space-y-6">
             <PartnerDashboard
               currentRequest={activeBooking}
@@ -379,7 +492,7 @@ export default function App() {
         )}
 
         {/* VIEW 3: REGISTER AS ATTENDANT */}
-        {currentView === 'register' && (
+        {currentUser && currentView === 'register' && (
           <div className="space-y-6">
             <RegistrationModal
               onRegisterCaregiver={handleRegisterCaregiver}
@@ -388,7 +501,7 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW 4: SAFETY & VERIFICATION */}
+        {/* VIEW 4: SAFETY & VERIFICATION (ALWAYS ACCESSIBLE) */}
         {currentView === 'safety' && (
           <div className="space-y-6">
             <SafetyTrustSection />
@@ -418,6 +531,7 @@ export default function App() {
       <AuthModal
         isOpen={authModalOpen}
         initialMode={authModalMode}
+        targetRole={authModalRole}
         onClose={() => setAuthModalOpen(false)}
         onSuccess={handleAuthSuccess}
       />
@@ -440,7 +554,16 @@ export default function App() {
             <button onClick={() => setCurrentView('safety')} className="hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer">
               Safety Protocol
             </button>
-            <button onClick={() => setCurrentView('register')} className="hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer">
+            <button 
+              onClick={() => {
+                if (currentUser) {
+                  setCurrentView('register');
+                } else {
+                  handleOpenAuth('join', 'attendant');
+                }
+              }} 
+              className="hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
+            >
               Join as Sathi
             </button>
             <button onClick={toggleDarkMode} className="hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer">

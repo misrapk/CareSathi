@@ -1,25 +1,24 @@
 import React, { useState } from 'react';
-import { PatientBookingRequest, CaregiverProfile } from '../../types';
+import { PatientBookingRequest, SathiSkillBadge } from '../../types';
 import { 
   Power, 
-  MapPin, 
   Clock, 
-  CheckCircle2, 
-  AlertCircle, 
   ShieldCheck, 
-  Bell, 
   Bed, 
   Building2, 
   KeyRound, 
-  Check, 
   Wallet, 
-  Plus, 
   Heart,
   Droplets,
   Soup,
   Footprints,
   Pill,
-  Send
+  Send,
+  Award,
+  Moon,
+  Sparkles,
+  CheckCircle2,
+  BellRing
 } from 'lucide-react';
 
 interface PartnerDashboardProps {
@@ -27,7 +26,7 @@ interface PartnerDashboardProps {
   onAcceptRequest: () => void;
   onDeclineRequest: () => void;
   onVerifyOtp: (enteredOtp: string) => boolean;
-  onAddCareLog: (note: string, category: 'vitals' | 'food' | 'mobility' | 'medication' | 'nurse' | 'general') => void;
+  onAddCareLog: (note: string, category: 'vitals' | 'food' | 'mobility' | 'medication' | 'nurse' | 'general' | 'awake_check') => void;
   onEndDuty: () => void;
   onOpenPassModal: () => void;
   onSwitchToFamilyView: () => void;
@@ -49,9 +48,17 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
   const [customLogNote, setCustomLogNote] = useState('');
 
   // Shift state
-  const isAssigned = currentRequest && (currentRequest.status === 'matched' || currentRequest.status === 'in_progress');
   const isShiftActive = currentRequest?.status === 'in_progress';
   const hasIncomingDuty = currentRequest && currentRequest.status === 'searching';
+  const isNightVigil = currentRequest?.isNightVigil || currentRequest?.shiftType === 'night_vigil';
+
+  // Partner's verified badges
+  const partnerBadges: SathiSkillBadge[] = [
+    'Night Vigil Specialist',
+    'GDA Clinical Assistant',
+    'IV & Vitals Vigilance',
+    'Post-Op Mobility'
+  ];
 
   const handleOtpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +76,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
     }
   };
 
-  const handleQuickLog = (note: string, category: 'vitals' | 'food' | 'mobility' | 'medication' | 'nurse' | 'general') => {
+  const handleQuickLog = (note: string, category: 'vitals' | 'food' | 'mobility' | 'medication' | 'nurse' | 'general' | 'awake_check') => {
     onAddCareLog(note, category);
   };
 
@@ -84,7 +91,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
     <div className="max-w-4xl mx-auto space-y-6">
       
       {/* Top Attendant Header */}
-      <div className="bg-stone-900 text-white rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-stone-900 text-white rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-stone-800">
         <div>
           <div className="flex items-center gap-2 text-stone-400 text-xs font-semibold uppercase tracking-wider mb-1">
             <span>CARESATHI PARTNER CONSOLE</span>
@@ -93,24 +100,41 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
             <span>Attendant: Rameshwar Yadav</span>
-            <span className="text-xs bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-md font-medium">
+            <span className="text-xs bg-emerald-950 text-emerald-300 border border-emerald-800 px-2.5 py-0.5 rounded-full font-bold">
               Badge #CS-DL-8841
             </span>
           </h2>
-          <div className="flex items-center gap-3 text-xs text-stone-300 mt-1">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-stone-300 mt-1.5">
             <span>GDA Certified</span>
             <span aria-hidden="true">·</span>
             <span>Max Super Speciality & AIIMS Radius</span>
             <span aria-hidden="true">·</span>
             <span className="text-emerald-400 font-semibold">₹150/hr Base Rate</span>
           </div>
+
+          {/* SATHI SKILL BADGES BAR */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-stone-800">
+            <span className="text-[11px] text-stone-400 flex items-center gap-1 font-semibold mr-1">
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              Verified Sathi Badges:
+            </span>
+            {partnerBadges.map((badge) => (
+              <span
+                key={badge}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-stone-800 text-teal-300 border border-stone-700 flex items-center gap-1"
+              >
+                <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                {badge}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Online / Offline Switch */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0 self-start sm:self-center">
           <button
             onClick={() => setIsOnline(!isOnline)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
               isOnline
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'
                 : 'bg-stone-800 hover:bg-stone-700 text-stone-400 border border-stone-700'
@@ -126,13 +150,13 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-stone-900 p-4 rounded-2xl border border-stone-200 dark:border-stone-800">
           <span className="text-xs text-stone-500 dark:text-stone-400 block">Today's Earnings</span>
-          <span className="text-xl font-bold text-stone-900 dark:text-white tabular-nums">₹1,200</span>
-          <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block mt-0.5">2 duties completed</span>
+          <span className="text-xl font-bold text-stone-900 dark:text-white tabular-nums">₹1,800</span>
+          <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block mt-0.5">Overnight & hourly duty</span>
         </div>
         <div className="bg-white dark:bg-stone-900 p-4 rounded-2xl border border-stone-200 dark:border-stone-800">
           <span className="text-xs text-stone-500 dark:text-stone-400 block">Hours On-Duty</span>
-          <span className="text-xl font-bold text-stone-900 dark:text-white tabular-nums">8.0 hrs</span>
-          <span className="text-[10px] text-stone-500 dark:text-stone-400 block mt-0.5">Max Saket Ward 4</span>
+          <span className="text-xl font-bold text-stone-900 dark:text-white tabular-nums">12.0 hrs</span>
+          <span className="text-[10px] text-stone-500 dark:text-stone-400 block mt-0.5">Ward 402 - Bed #12</span>
         </div>
         <div className="bg-white dark:bg-stone-900 p-4 rounded-2xl border border-stone-200 dark:border-stone-800">
           <span className="text-xs text-stone-500 dark:text-stone-400 block">Partner Rating</span>
@@ -142,7 +166,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
         <div className="bg-white dark:bg-stone-900 p-4 rounded-2xl border border-stone-200 dark:border-stone-800">
           <span className="text-xs text-stone-500 dark:text-stone-400 block">Instant Payout</span>
           <button
-            onClick={() => alert('Payout of ₹1,200 initiated to your linked UPI VPA (rameshwar@okaxis). Transfer time: Instant.')}
+            onClick={() => alert('Payout of ₹1,800 initiated to your linked UPI VPA (rameshwar@okaxis). Transfer time: Instant.')}
             className="mt-1 text-xs font-bold text-teal-800 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-300 flex items-center gap-1 underline cursor-pointer"
           >
             <Wallet className="w-3.5 h-3.5" />
@@ -161,7 +185,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                 NEW BEDSIDE DUTY REQUEST NEARBY!
               </span>
             </div>
-            <span className="text-xs font-mono font-bold text-amber-800 dark:text-amber-300 bg-white dark:bg-stone-900 px-2 py-0.5 rounded border border-amber-300 dark:border-amber-700">
+            <span className="text-xs font-mono font-bold text-amber-800 dark:text-amber-300 bg-white dark:bg-stone-900 px-2.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-700">
               0.8 km away
             </span>
           </div>
@@ -182,6 +206,12 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
               <div className="text-xs text-stone-500 dark:text-stone-400 mt-1">
                 Need: <span className="font-medium text-stone-700 dark:text-stone-200">{currentRequest.primaryNeed}</span>
               </div>
+              {currentRequest.requiredSkillBadge && currentRequest.requiredSkillBadge !== 'Any' && (
+                <div className="text-xs text-teal-800 dark:text-teal-300 mt-1.5 font-semibold flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Required Badge: {currentRequest.requiredSkillBadge}</span>
+                </div>
+              )}
             </div>
 
             <div className="bg-white dark:bg-stone-900 p-4 rounded-2xl border border-amber-200 dark:border-stone-800 flex flex-col justify-between">
@@ -191,7 +221,7 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
                   ₹{currentRequest.totalEstimatedCost}
                 </div>
                 <span className="text-xs text-stone-500 dark:text-stone-400">
-                  {currentRequest.requestedHours} hours @ ₹{currentRequest.hourlyRate}/hr
+                  {currentRequest.requestedHours} hours {isNightVigil ? '(Night Vigil)' : `@ ₹${currentRequest.hourlyRate}/hr`}
                 </span>
               </div>
 
@@ -261,139 +291,210 @@ export const PartnerDashboard: React.FC<PartnerDashboardProps> = ({
               <input
                 type="text"
                 maxLength={4}
+                placeholder="4-digit OTP"
                 value={enteredOtp}
                 onChange={(e) => setEnteredOtp(e.target.value)}
-                placeholder="• • • •"
-                className="w-48 mx-auto px-4 py-3 bg-white dark:bg-stone-800 border-2 border-teal-700 rounded-xl text-center text-2xl font-mono font-bold tracking-widest text-stone-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-teal-700/20"
+                className="w-44 mx-auto block px-3 py-2 text-center text-2xl font-mono font-black tracking-widest bg-white dark:bg-stone-900 border-2 border-teal-700 rounded-xl text-stone-900 dark:text-white focus:outline-none"
               />
 
               {otpError && (
-                <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold mt-2">{otpError}</p>
+                <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold block mt-2">
+                  {otpError}
+                </span>
               )}
 
               <button
                 type="submit"
-                className="w-full mt-4 py-2.5 bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
+                className="mt-4 w-full py-2.5 bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
               >
-                Verify OTP & Begin Shift Clock
+                Validate OTP & Start Bedside Shift
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Case 3: SHIFT IN PROGRESS (Attendant Bedside Assistant Mode) */}
+      {/* Case 3: DUTY IN PROGRESS - BED LOGGING & NIGHT VIGIL CONSOLE */}
       {isShiftActive && currentRequest && (
-        <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl p-6 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 dark:border-stone-800 pb-5">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider mb-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-                <span>LIVE DUTY IN PROGRESS</span>
-                <span aria-hidden="true">·</span>
-                <span>{currentRequest.wardRoomBed}</span>
+        <div className="space-y-6">
+          
+          {/* Active Shift Header */}
+          <div className="bg-white dark:bg-stone-900 rounded-3xl p-6 border-2 border-emerald-600 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-4">
+              <div>
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                  ACTIVE BEDSIDE DUTY IN PROGRESS
+                </span>
+                <h3 className="text-xl font-bold text-stone-900 dark:text-white mt-0.5">
+                  Sitting with {currentRequest.patientName} ({currentRequest.wardRoomBed})
+                </h3>
+                <span className="text-xs text-stone-500 dark:text-stone-400">
+                  {currentRequest.hospitalName} · Rate: ₹{currentRequest.hourlyRate}/hr
+                </span>
               </div>
-              <h3 className="text-xl font-bold text-stone-900 dark:text-white">
-                Attending: {currentRequest.patientName} ({currentRequest.patientAge}y)
-              </h3>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={onOpenPassModal}
+                  className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-semibold rounded-xl border border-stone-300 dark:border-stone-700 cursor-pointer"
+                >
+                  Entry Pass
+                </button>
+                <button
+                  onClick={onEndDuty}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl shadow transition-colors cursor-pointer"
+                >
+                  Conclude Shift & Request Payment
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={onOpenPassModal}
-                className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-semibold rounded-lg border border-stone-300 dark:border-stone-700 cursor-pointer"
-              >
-                Hospital Pass
-              </button>
-              <button
-                onClick={onEndDuty}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer"
-              >
-                Conclude Shift & Bill
-              </button>
+            {/* FEATURE: NIGHT VIGIL 90-MINUTE AWAKE LOGGING STATION */}
+            {isNightVigil && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-stone-900 to-indigo-950 text-white rounded-2xl border border-indigo-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Moon className="w-4 h-4 text-amber-400" />
+                    <span className="font-bold text-xs uppercase tracking-wide text-amber-300">
+                      Night Vigil Awake Protocol (Every 90 Mins)
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-stone-300">
+                    Family Sees This Live
+                  </span>
+                </div>
+
+                <p className="text-xs text-stone-300">
+                  Tap any status below to immediately post a verified awake check to the patient family's live screen:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => handleQuickLog('🌙 Awake Check: Patient sleeping peacefully. IV drip flow steady, blanket adjusted.', 'awake_check')}
+                    className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-left text-xs font-medium border border-white/15 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>✓ Vitals steady, IV normal</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  </button>
+                  <button
+                    onClick={() => handleQuickLog('🌙 Awake Check: Assisted warm water sip. Changed position to prevent bedsores.', 'awake_check')}
+                    className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-left text-xs font-medium border border-white/15 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>✓ Water sip & turned posture</span>
+                    <Droplets className="w-3.5 h-3.5 text-teal-300" />
+                  </button>
+                  <button
+                    onClick={() => handleQuickLog('🌙 Awake Check: Patient woke up feeling restless. Comforted patient, all stable.', 'awake_check')}
+                    className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-left text-xs font-medium border border-white/15 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>✓ Patient checked & reassured</span>
+                    <Heart className="w-3.5 h-3.5 text-rose-300" />
+                  </button>
+                  <button
+                    onClick={() => handleQuickLog('🌙 Awake Check: Ward nurse checked temperature & BP. All normal.', 'awake_check')}
+                    className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-left text-xs font-medium border border-white/15 transition-colors cursor-pointer flex items-center justify-between"
+                  >
+                    <span>✓ Sister vitals round completed</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Standard Quick Care Actions (Food, Water, Walk, Sister Bell) */}
+            <div className="mt-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-stone-800 dark:text-stone-200 uppercase tracking-wider">
+                  One-Tap Bedside Action Log:
+                </span>
+                <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                  Instant SMS/App sync to family
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <button
+                  onClick={() => handleQuickLog('Hydration: Assisted patient with warm water sip (200ml)', 'food')}
+                  className="p-3 bg-stone-50 dark:bg-stone-800 hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-xl border border-stone-200 dark:border-stone-700 text-left transition-all cursor-pointer group"
+                >
+                  <Droplets className="w-4 h-4 text-teal-700 dark:text-teal-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-xs text-stone-900 dark:text-white block mt-1">Water / Tea</span>
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400">Log hydration</span>
+                </button>
+
+                <button
+                  onClick={() => handleQuickLog('Meal: Spoon-fed warm hospital dalia & fruits', 'food')}
+                  className="p-3 bg-stone-50 dark:bg-stone-800 hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-xl border border-stone-200 dark:border-stone-700 text-left transition-all cursor-pointer group"
+                >
+                  <Soup className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-xs text-stone-900 dark:text-white block mt-1">Meal Served</span>
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400">Feeding support</span>
+                </button>
+
+                <button
+                  onClick={() => handleQuickLog('Mobility: Supported slow 5-minute corridor walk & washroom visit', 'mobility')}
+                  className="p-3 bg-stone-50 dark:bg-stone-800 hover:bg-teal-50 dark:hover:bg-teal-950/40 rounded-xl border border-stone-200 dark:border-stone-700 text-left transition-all cursor-pointer group"
+                >
+                  <Footprints className="w-4 h-4 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-xs text-stone-900 dark:text-white block mt-1">Walk / Washroom</span>
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400">Mobility assisted</span>
+                </button>
+
+                <button
+                  onClick={() => handleQuickLog('Nurse Call: Rung bedside emergency bell for IV replacement', 'nurse')}
+                  className="p-3 bg-stone-50 dark:bg-stone-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl border border-stone-200 dark:border-stone-700 text-left transition-all cursor-pointer group"
+                >
+                  <BellRing className="w-4 h-4 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-xs text-stone-900 dark:text-white block mt-1">Sister Bell</span>
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400">Nurse assistance</span>
+                </button>
+              </div>
+
+              {/* Custom Attendant Log */}
+              <form onSubmit={handleCustomLogSubmit} className="mt-3 flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Type specific care note (e.g. 'Doctor visited for morning rounds')"
+                  value={customLogNote}
+                  onChange={(e) => setCustomLogNote(e.target.value)}
+                  className="flex-1 px-3.5 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-700/20 focus:border-teal-700"
+                />
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 dark:bg-teal-700 dark:hover:bg-teal-600 text-white text-xs font-bold rounded-xl transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Post Note</span>
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </form>
             </div>
           </div>
-
-          {/* Quick Bedside Action Buttons */}
-          <div>
-            <span className="text-xs font-semibold text-stone-800 dark:text-stone-200 uppercase tracking-wider block mb-2">
-              Quick Log: Tap to notify family in real-time
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <button
-                onClick={() => handleQuickLog('Offered fresh warm water & patient had 200ml', 'food')}
-                className="p-3 bg-stone-50 hover:bg-teal-50 dark:bg-stone-800 dark:hover:bg-stone-750 dark:border-stone-700 border border-stone-200 rounded-xl text-left transition-colors text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2 cursor-pointer"
-              >
-                <Droplets className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-                <span>Gave Water / Hydration</span>
-              </button>
-
-              <button
-                onClick={() => handleQuickLog('Assisted patient with hot soup / meal as per diet chart', 'food')}
-                className="p-3 bg-stone-50 hover:bg-teal-50 dark:bg-stone-800 dark:hover:bg-stone-750 dark:border-stone-700 border border-stone-200 rounded-xl text-left transition-colors text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2 cursor-pointer"
-              >
-                <Soup className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Assisted Meal / Soup</span>
-              </button>
-
-              <button
-                onClick={() => handleQuickLog('Supported patient walking 10 steps in corridor & back to bed safely', 'mobility')}
-                className="p-3 bg-stone-50 hover:bg-teal-50 dark:bg-stone-800 dark:hover:bg-stone-750 dark:border-stone-700 border border-stone-200 rounded-xl text-left transition-colors text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2 cursor-pointer"
-              >
-                <Footprints className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Mobility / Walk Support</span>
-              </button>
-
-              <button
-                onClick={() => handleQuickLog('IV drip was low; alerted Ward Duty Sister who replaced saline', 'nurse')}
-                className="p-3 bg-stone-50 hover:bg-rose-50 dark:bg-stone-800 dark:hover:bg-stone-750 dark:border-stone-700 border border-stone-200 rounded-xl text-left transition-colors text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-2 cursor-pointer"
-              >
-                <Bell className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-                <span>Alerted On-Duty Nurse</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Custom Log input */}
-          <form onSubmit={handleCustomLogSubmit} className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Type specific care update for family (e.g. 'Patient sleeping peacefully, vitals normal')"
-              value={customLogNote}
-              onChange={(e) => setCustomLogNote(e.target.value)}
-              className="flex-1 px-3.5 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-700/20 focus:border-teal-700"
-            />
-            <button
-              type="submit"
-              className="px-4 py-2 bg-teal-800 hover:bg-teal-900 text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Log to Family</span>
-            </button>
-          </form>
 
         </div>
       )}
 
-      {/* Case 4: No active duty right now */}
-      {!hasIncomingDuty && !isAssigned && isOnline && (
-        <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center max-w-lg mx-auto">
-          <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-800 flex items-center justify-center mx-auto mb-3">
-            <Bell className="w-6 h-6 animate-bounce" />
+      {/* Case 4: IDLE CONSOLE - WAITING FOR DISPATCH */}
+      {!currentRequest && (
+        <div className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-stone-200 dark:border-stone-800 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 flex items-center justify-center mx-auto">
+            <Clock className="w-8 h-8" />
           </div>
-          <h3 className="text-base font-bold text-stone-900">
-            Waiting for Hospital Attendant Requests...
-          </h3>
-          <p className="text-xs text-stone-500 mt-1">
-            You are online. When a family raises a care request near Max Saket or AIIMS, your screen will buzz with the duty details and payout.
-          </p>
+          <div className="space-y-1">
+            <h3 className="font-bold text-lg text-stone-900 dark:text-white">
+              You are Online & Ready for Bedside Duties
+            </h3>
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 max-w-md mx-auto">
+              Requests raised by patient families at Max Saket, AIIMS, and Apollo will buzzer here in real time.
+            </p>
+          </div>
 
-          <div className="mt-4 pt-4 border-t border-stone-100 flex items-center justify-center gap-3">
+          <div className="pt-2">
             <button
               onClick={onSwitchToFamilyView}
-              className="text-xs font-semibold text-teal-800 hover:underline"
+              className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 dark:bg-teal-700 dark:hover:bg-teal-600 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
             >
-              Switch to Family View to Raise a Test Booking →
+              Switch to Family View to Raise a Test Request →
             </button>
           </div>
         </div>

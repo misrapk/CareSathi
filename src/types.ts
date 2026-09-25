@@ -7,6 +7,14 @@ export interface AuthUser {
   badgeId?: string;
 }
 
+export type SathiSkillBadge = 
+  | 'Night Vigil Specialist'
+  | 'Post-Op Mobility'
+  | 'Dementia & Elder Companion'
+  | 'GDA Clinical Assistant'
+  | 'Hindi & Regional Fluent'
+  | 'IV & Vitals Vigilance';
+
 export type CaregiverQualification = 
   | 'GDA Certified (General Duty Assistant)'
   | 'Nursing Assistant (GNM / ANM)'
@@ -21,6 +29,7 @@ export interface CaregiverProfile {
   age: number;
   experienceYears: number;
   qualification: CaregiverQualification;
+  skills: SathiSkillBadge[];
   aadhaarVerified: boolean;
   policeVerificationPassed: boolean;
   hospitalPassApproved: boolean;
@@ -51,8 +60,24 @@ export interface CareLogItem {
   id: string;
   timestamp: string;
   note: string;
-  category: 'vitals' | 'food' | 'mobility' | 'medication' | 'nurse' | 'general';
+  category: 'vitals' | 'food' | 'mobility' | 'medication' | 'nurse' | 'general' | 'awake_check';
   loggedBy: string;
+}
+
+export interface AwakeCheckItem {
+  id: string;
+  timestamp: string;
+  status: 'confirmed_awake' | 'nurse_alerted';
+  notes: string;
+  confirmedBy: string;
+}
+
+export interface FamilyWatchMember {
+  id: string;
+  name: string;
+  relation: string;
+  city: string;
+  joinedAt: string;
 }
 
 export interface PatientBookingRequest {
@@ -69,6 +94,9 @@ export interface PatientBookingRequest {
   specialInstructions?: string;
   preferredAttendantGender: 'Any' | 'Male' | 'Female';
   preferredLanguage: string;
+  requiredSkillBadge?: SathiSkillBadge | 'Any';
+  shiftType?: 'hourly' | 'night_vigil';
+  isNightVigil?: boolean;
   requestedHours: number;
   hourlyRate: number;
   totalEstimatedCost: number;
@@ -85,6 +113,8 @@ export interface PatientBookingRequest {
   actualElapsedSeconds?: number;
   finalTotalCost?: number;
   careLogs: CareLogItem[];
+  awakeChecks?: AwakeCheckItem[];
+  familyWatchMembers?: FamilyWatchMember[];
   paymentStatus?: 'pending' | 'paid_cash' | 'paid_upi';
   ratingGiven?: number;
   reviewGiven?: string;

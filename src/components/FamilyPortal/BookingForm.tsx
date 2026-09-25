@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { INDIAN_HOSPITALS, COMMON_CARE_NEEDS } from '../../data/mockData';
-import { PatientBookingRequest } from '../../types';
+import { PatientBookingRequest, SathiSkillBadge } from '../../types';
 import { 
   Building2, 
   Bed, 
@@ -12,7 +12,9 @@ import {
   ArrowRight,
   Shield,
   HelpCircle,
-  AlertCircle
+  AlertCircle,
+  Moon,
+  Award
 } from 'lucide-react';
 
 interface BookingFormProps {
@@ -32,8 +34,10 @@ export const BookingForm: React.FC<BookingFormProps> = ({ onSubmitBooking, isDis
   const [patientGender, setPatientGender] = useState<'Male' | 'Female' | 'Other'>('Male');
 
   // Care need & hours
+  const [shiftType, setShiftType] = useState<'hourly' | 'night_vigil'>('hourly');
   const [selectedNeedId, setSelectedNeedId] = useState<string>('companion-feeding');
   const [requestedHours, setRequestedHours] = useState<number>(4);
+  const [requiredSkillBadge, setRequiredSkillBadge] = useState<SathiSkillBadge | 'Any'>('Any');
   const [specialInstructions, setSpecialInstructions] = useState('Father had cataract & knee discomfort. Needs steady support walking to washroom and gentle reminder for warm soup at 8:30 PM.');
   const [preferredAttendantGender, setPreferredAttendantGender] = useState<'Any' | 'Male' | 'Female'>('Any');
   const [preferredLanguage, setPreferredLanguage] = useState('Hindi');
@@ -44,9 +48,11 @@ export const BookingForm: React.FC<BookingFormProps> = ({ onSubmitBooking, isDis
   const [requesterRelation, setRequesterRelation] = useState('Son');
 
   // Price calculation
+  const isNightShift = shiftType === 'night_vigil';
+  const effectiveHours = isNightShift ? 12 : requestedHours;
   const currentNeed = COMMON_CARE_NEEDS.find(n => n.id === selectedNeedId) || COMMON_CARE_NEEDS[0];
-  const hourlyRate = currentNeed.baseRate;
-  const totalEstimatedCost = hourlyRate * requestedHours;
+  const hourlyRate = isNightShift ? 150 : currentNeed.baseRate;
+  const totalEstimatedCost = isNightShift ? 1800 : (hourlyRate * requestedHours);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,11 +69,14 @@ export const BookingForm: React.FC<BookingFormProps> = ({ onSubmitBooking, isDis
       hospitalCity: finalHospitalCity,
       wardRoomBed,
       attendantPassAvailable,
-      primaryNeed: currentNeed.title,
+      primaryNeed: isNightShift ? 'Scheduled Night Vigil (8 PM - 8 AM)' : currentNeed.title,
       specialInstructions,
       preferredAttendantGender,
       preferredLanguage,
-      requestedHours,
+      requiredSkillBadge,
+      shiftType,
+      isNightVigil: isNightShift,
+      requestedHours: effectiveHours,
       hourlyRate,
       totalEstimatedCost,
       requesterName,
@@ -92,6 +101,35 @@ export const BookingForm: React.FC<BookingFormProps> = ({ onSubmitBooking, isDis
         <p className="text-sm text-stone-600 dark:text-stone-300 mt-1 max-w-2xl">
           Have urgent work, travel, or need rest? Our verified CareSathi attendants sit beside your loved one, assist with meals, monitor IV fluids, and coordinate with hospital nurses.
         </p>
+
+        {/* Shift Type Switcher: Standard Hourly vs Night Vigil */}
+        <div className="mt-5 grid grid-cols-2 gap-3 p-1.5 bg-stone-100 dark:bg-stone-800/80 rounded-2xl max-w-md">
+          <button
+            type="button"
+            onClick={() => setShiftType('hourly')}
+            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              shiftType === 'hourly'
+                ? 'bg-white dark:bg-stone-900 text-teal-900 dark:text-teal-300 shadow-xs'
+                : 'text-stone-600 dark:text-stone-400'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Standard Hourly Shift</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShiftType('night_vigil')}
+            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              shiftType === 'night_vigil'
+                ? 'bg-teal-800 text-white shadow-xs'
+                : 'text-stone-600 dark:text-stone-400'
+            }`}
+          >
+            <Moon className="w-3.5 h-3.5 text-amber-300" />
+            <span>Night Vigil (8 PM - 8 AM)</span>
+          </button>
+        </div>
+
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -217,72 +255,142 @@ export const BookingForm: React.FC<BookingFormProps> = ({ onSubmitBooking, isDis
           </div>
         </div>
 
-        {/* Section 3: Care Need & Hourly Duration */}
+        {/* Section 3: Care Need, Night Vigil & Specialized Skill Badges */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="block text-xs font-semibold text-stone-800 dark:text-stone-200 uppercase tracking-wider">
-              3. Nature of Assistance Needed
+              3. Nature of Assistance & Skill Requirements
             </label>
-            <span className="text-xs text-teal-800 dark:text-teal-400 font-medium">Hourly Transparent Pricing</span>
+            <span className="text-xs text-teal-800 dark:text-teal-400 font-medium">Transparent Hourly / Shift Pricing</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {COMMON_CARE_NEEDS.map((need) => {
-              const isSelected = selectedNeedId === need.id;
-              return (
-                <button
-                  type="button"
-                  key={need.id}
-                  onClick={() => setSelectedNeedId(need.id)}
-                  className={`p-3.5 rounded-xl border text-left transition-all ${
-                    isSelected
-                      ? 'border-teal-700 bg-teal-50/70 dark:bg-teal-950/40 dark:border-teal-500 shadow-sm ring-1 ring-teal-700'
-                      : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 bg-white dark:bg-stone-850'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <span className="font-semibold text-sm text-stone-900 dark:text-white leading-snug">
-                      {need.title}
-                    </span>
-                    <span className="text-xs font-bold text-teal-900 dark:text-teal-300 bg-white dark:bg-stone-800 px-2 py-0.5 rounded-md border border-stone-200 dark:border-stone-700 tabular-nums">
-                      ₹{need.baseRate}/hr
+          {/* Night Vigil Highlight Card when selected */}
+          {isNightShift ? (
+            <div className="p-4 bg-gradient-to-r from-stone-900 to-teal-950 text-white rounded-2xl border border-teal-800 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-teal-800 flex items-center justify-center text-amber-300">
+                    <Moon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-white">
+                      Scheduled Night Vigil (Raat Ki Chowki)
+                    </h4>
+                    <span className="text-xs text-stone-300">
+                      8:00 PM to 8:00 AM (12 Hours Full Overnight Vigil)
                     </span>
                   </div>
-                  <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 line-clamp-2">
-                    {need.description}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
+                </div>
+                <span className="px-2.5 py-1 bg-teal-900/80 text-amber-300 text-xs font-bold rounded-lg border border-teal-700 tabular-nums">
+                  ₹1,800 Flat
+                </span>
+              </div>
+              <div className="text-xs text-stone-300 bg-black/20 p-2.5 rounded-xl border border-white/10 space-y-1">
+                <span className="font-semibold text-amber-300 block">✓ Automatic 90-Minute Awake Checks:</span>
+                <span>The night attendant must confirm awake vigilance every 90 minutes (checking IV fluid, patient comfort, vitals monitor) and log it live for your family.</span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {COMMON_CARE_NEEDS.map((need) => {
+                  const isSelected = selectedNeedId === need.id;
+                  return (
+                    <button
+                      type="button"
+                      key={need.id}
+                      onClick={() => setSelectedNeedId(need.id)}
+                      className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-teal-700 bg-teal-50/70 dark:bg-teal-950/40 dark:border-teal-500 shadow-sm ring-1 ring-teal-700'
+                          : 'border-stone-200 dark:border-stone-700 hover:border-stone-300 dark:hover:border-stone-600 bg-white dark:bg-stone-850'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <span className="font-semibold text-sm text-stone-900 dark:text-white leading-snug">
+                          {need.title}
+                        </span>
+                        <span className="text-xs font-bold text-teal-900 dark:text-teal-300 bg-white dark:bg-stone-800 px-2 py-0.5 rounded-md border border-stone-200 dark:border-stone-700 tabular-nums">
+                          ₹{need.baseRate}/hr
+                        </span>
+                      </div>
+                      <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 line-clamp-2">
+                        {need.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
 
-          {/* Hours Duration Selector */}
+              {/* Hours Duration Selector */}
+              <div className="mt-4 p-4 bg-stone-50 dark:bg-stone-850 rounded-xl border border-stone-200 dark:border-stone-700">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-stone-500" />
+                    Required Care Duration (Hours):
+                  </span>
+                  <span className="text-sm font-bold text-teal-900 dark:text-teal-300 tabular-nums">
+                    {requestedHours} {requestedHours === 1 ? 'Hour' : 'Hours'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {[2, 4, 6, 8].map((hrs) => (
+                    <button
+                      type="button"
+                      key={hrs}
+                      onClick={() => setRequestedHours(hrs)}
+                      className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                        requestedHours === hrs
+                          ? 'bg-teal-800 dark:bg-teal-700 text-white border-teal-800 dark:border-teal-700 shadow-sm'
+                          : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
+                      }`}
+                    >
+                      {hrs}h
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* SATHI SKILL BADGES & SPECIALIZED MATCHING */}
           <div className="mt-4 p-4 bg-stone-50 dark:bg-stone-850 rounded-xl border border-stone-200 dark:border-stone-700">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-stone-500" />
-                Required Care Duration (Hours):
+              <span className="text-xs font-semibold text-stone-800 dark:text-stone-200 flex items-center gap-1.5">
+                <Award className="w-4 h-4 text-teal-700 dark:text-teal-400" />
+                Required Sathi Skill Badge (Specialized Matching):
               </span>
-              <span className="text-sm font-bold text-teal-900 dark:text-teal-300 tabular-nums">
-                {requestedHours} {requestedHours === 1 ? 'Hour' : 'Hours'}
+              <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                Filtered Attendants
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              {[2, 4, 6, 8, 12].map((hrs) => (
-                <button
-                  type="button"
-                  key={hrs}
-                  onClick={() => setRequestedHours(hrs)}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                    requestedHours === hrs
-                      ? 'bg-teal-800 dark:bg-teal-700 text-white border-teal-800 dark:border-teal-700 shadow-sm'
-                      : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700'
-                  }`}
-                >
-                  {hrs}h {hrs === 12 && '(Night)'}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2">
+              {[
+                'Any',
+                'Night Vigil Specialist',
+                'Post-Op Mobility',
+                'Dementia & Elder Companion',
+                'GDA Clinical Assistant',
+                'IV & Vitals Vigilance'
+              ].map((badge) => {
+                const isSelected = requiredSkillBadge === badge;
+                return (
+                  <button
+                    type="button"
+                    key={badge}
+                    onClick={() => setRequiredSkillBadge(badge as SathiSkillBadge | 'Any')}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-teal-800 dark:bg-teal-700 text-white border-teal-800 shadow-xs'
+                        : 'bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-200 dark:border-stone-700 hover:border-stone-300'
+                    }`}
+                  >
+                    {badge === 'Any' ? 'Any Verified Sathi' : badge}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -368,7 +476,7 @@ export const BookingForm: React.FC<BookingFormProps> = ({ onSubmitBooking, isDis
               <div className="flex items-center gap-2 text-stone-400 text-xs">
                 <span>ESTIMATED HOURLY CHARGE</span>
                 <span aria-hidden="true">·</span>
-                <span>{requestedHours} HOURS @ ₹{hourlyRate}/HR</span>
+                <span>{effectiveHours} HOURS {isNightShift ? '(NIGHT VIGIL FLAT)' : `@ ₹${hourlyRate}/HR`}</span>
               </div>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-extrabold tabular-nums tracking-tight text-white">

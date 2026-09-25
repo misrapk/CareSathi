@@ -9,17 +9,18 @@ import {
   HeartHandshake, 
   ArrowRight, 
   CheckCircle2, 
-  Building2,
-  Sparkles,
-  Bed,
-  BellRing
+  Moon,
+  Users,
+  Award,
+  Lock,
+  Sparkles
 } from 'lucide-react';
 
 interface HomePageProps {
   onBookForPatient: () => void;
   onAttendantMode: () => void;
   onOpenSafety: () => void;
-  onOpenAuth: (mode: 'signin' | 'join') => void;
+  onOpenAuth: (mode: 'signin' | 'join', role?: 'family' | 'attendant') => void;
   isAuthenticated: boolean;
 }
 
@@ -30,6 +31,22 @@ export const HomePage: React.FC<HomePageProps> = ({
   onOpenAuth,
   isAuthenticated
 }) => {
+  const handleBookClick = () => {
+    if (!isAuthenticated) {
+      onOpenAuth('signin', 'family');
+    } else {
+      onBookForPatient();
+    }
+  };
+
+  const handleAttendantClick = () => {
+    if (!isAuthenticated) {
+      onOpenAuth('signin', 'attendant');
+    } else {
+      onAttendantMode();
+    }
+  };
+
   return (
     <div className="space-y-16 py-4 sm:py-8">
       
@@ -46,7 +63,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="lg:col-span-7 space-y-6">
             
             {/* Minimal Brand Kicker */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-stone-800/80 rounded-full text-xs font-semibold text-teal-800 dark:text-teal-300 border border-stone-200 dark:border-stone-700 shadow-xs">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white dark:bg-stone-800/80 rounded-full text-xs font-semibold text-teal-800 dark:text-teal-300 border border-stone-200 dark:border-stone-700 shadow-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>ON-DEMAND HOSPITAL ATTENDANTS IN INDIA</span>
             </div>
@@ -63,31 +80,51 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             {/* Clean Subtitle */}
             <p className="text-stone-600 dark:text-stone-300 text-base sm:text-lg leading-relaxed max-w-xl">
-              When relatives have urgent office commitments, travel, or childcare duties, verified hospital companions step in to provide meals, mobility support, and continuous bedside vigilance.
+              When relatives have urgent office commitments, travel, or need overnight rest, verified hospital companions step in to provide meals, mobility support, and continuous bedside vigilance.
             </p>
 
             {/* TWO PROMINENT ACTION BUTTONS */}
-            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
-              <button
-                onClick={onBookForPatient}
-                className="px-6 py-4 bg-teal-800 hover:bg-teal-900 text-white rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-lg shadow-teal-900/15 active:scale-[0.98] transition-all cursor-pointer"
-              >
-                <Stethoscope className="w-5 h-5 text-teal-200" />
-                <span>Book for Patient</span>
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </button>
+            <div className="pt-2 space-y-2.5">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
+                <button
+                  onClick={handleBookClick}
+                  className="px-6 py-4 bg-teal-800 hover:bg-teal-900 text-white rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-lg shadow-teal-900/15 active:scale-[0.98] transition-all cursor-pointer group"
+                >
+                  <Stethoscope className="w-5 h-5 text-teal-200" />
+                  <span>Book for Patient</span>
+                  {!isAuthenticated ? (
+                    <span className="flex items-center gap-1 text-[11px] bg-teal-950/70 text-teal-200 px-2 py-0.5 rounded-md ml-1">
+                      <Lock className="w-3 h-3" /> Sign In
+                    </span>
+                  ) : (
+                    <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
+                  )}
+                </button>
 
-              <button
-                onClick={onAttendantMode}
-                className="px-6 py-4 bg-stone-900 hover:bg-stone-800 dark:bg-stone-800 dark:hover:bg-stone-700 text-white rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 border border-stone-700/50 shadow-md active:scale-[0.98] transition-all cursor-pointer"
-              >
-                <UserCheck className="w-5 h-5 text-amber-400" />
-                <span>Attendant Mode</span>
-              </button>
+                <button
+                  onClick={handleAttendantClick}
+                  className="px-6 py-4 bg-stone-900 hover:bg-stone-800 dark:bg-stone-800 dark:hover:bg-stone-700 text-white rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 border border-stone-700/50 shadow-md active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <UserCheck className="w-5 h-5 text-amber-400" />
+                  <span>Attendant Mode</span>
+                  {!isAuthenticated && (
+                    <span className="flex items-center gap-1 text-[11px] bg-stone-800 dark:bg-stone-900 text-stone-300 px-2 py-0.5 rounded-md ml-1">
+                      <Lock className="w-3 h-3 text-amber-400" /> Join
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {!isAuthenticated && (
+                <p className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1.5 pt-1">
+                  <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Sign in or join with a free account above to access hospital booking and attendant duties.</span>
+                </p>
+              )}
             </div>
 
             {/* Trust Markers */}
-            <div className="pt-3 flex flex-wrap items-center gap-4 text-xs font-medium text-stone-500 dark:text-stone-400">
+            <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-medium text-stone-500 dark:text-stone-400">
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 100% Aadhaar & Police Checked
@@ -97,8 +134,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                 Ola/Uber 4-Digit Bedside OTP
               </span>
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                ₹100 – ₹180 / hr
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                ₹100 – ₹180 / hr Flat
               </span>
             </div>
 
@@ -126,10 +163,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <linearGradient id="bedGrad" x1="50" y1="180" x2="350" y2="280" gradientUnits="userSpaceOnUse">
                       <stop stopColor="#0F766E" />
                       <stop stopColor="#115E59" />
-                    </linearGradient>
-                    <linearGradient id="warmLight" x1="200" y1="20" x2="200" y2="200" gradientUnits="userSpaceOnUse">
-                      <stop stopColor="#FEF3C7" stopOpacity="0.6" />
-                      <stop stopColor="#FEF3C7" stopOpacity="0" />
                     </linearGradient>
                   </defs>
 
@@ -175,7 +208,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <path d="M 98 168 Q 102 171 106 168" stroke="#78350F" strokeWidth="1.5" strokeLinecap="round" />
 
                   {/* CareSathi Attendant Companion Sitting Beside */}
-                  {/* Chair */}
                   <rect x="180" y="200" width="35" height="45" rx="4" fill="#CBD5E1" />
                   <line x1="182" y1="245" x2="182" y2="270" stroke="#64748B" strokeWidth="3" />
                   <line x1="213" y1="245" x2="213" y2="270" stroke="#64748B" strokeWidth="3" />
@@ -194,31 +226,31 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <path d="M 130 188 Q 140 188 150 188" stroke="#FDE68A" strokeWidth="4" strokeLinecap="round" />
                 </svg>
 
-                {/* Floating Glassmorphic Pill 1: 4-Digit Bedside OTP Handshake */}
-                <div className="absolute top-4 right-4 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-amber-300 dark:border-amber-700 shadow-md flex items-center gap-2">
-                  <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                {/* Floating Pill 1: 4-Digit Bedside OTP Handshake */}
+                <div className="absolute top-4 right-4 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-amber-300 dark:border-amber-700 shadow-md flex items-center gap-2">
+                  <KeyRound className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   <div>
-                    <span className="text-[10px] text-stone-500 dark:text-stone-400 block font-semibold leading-tight">
+                    <span className="text-[9px] text-stone-500 dark:text-stone-400 block font-semibold leading-tight">
                       BEDSIDE OTP
                     </span>
                     <span className="font-mono font-black text-xs text-stone-900 dark:text-white tracking-wider">
-                      5 8 4 2 · Verified
+                      5842 · Verified
                     </span>
                   </div>
                 </div>
 
-                {/* Floating Glassmorphic Pill 2: Live Activity Milestone */}
-                <div className="absolute bottom-4 left-4 right-4 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md p-3 rounded-2xl border border-stone-200 dark:border-stone-700 shadow-md flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 rounded-xl bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 flex items-center justify-center shrink-0">
-                      <Activity className="w-4 h-4" />
+                {/* Floating Pill 2: Live Activity Milestone */}
+                <div className="absolute bottom-4 left-4 right-4 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md p-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 shadow-md flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 flex items-center justify-center shrink-0">
+                      <Activity className="w-3.5 h-3.5" />
                     </div>
                     <div>
                       <span className="font-bold text-xs text-stone-900 dark:text-white block leading-tight">
                         Warm Meal & Hydration Assisted
                       </span>
                       <span className="text-[10px] text-stone-500 dark:text-stone-400">
-                        Room 402 · Attendant on duty
+                        Ward 402 · Sathi on duty
                       </span>
                     </div>
                   </div>
@@ -236,70 +268,94 @@ export const HomePage: React.FC<HomePageProps> = ({
 
       </section>
 
-      {/* 2. THE THREE CORE ESSENTIAL FEATURES */}
+      {/* 2. THE THREE SIGNATURE FEATURES: NIGHT VIGIL, MULTI-FAMILY LIVE WATCH, SKILL BADGES */}
       <section className="space-y-6">
-        <div className="text-center max-w-xl mx-auto space-y-1.5">
+        <div className="text-center max-w-2xl mx-auto space-y-1.5">
           <span className="text-xs font-bold uppercase tracking-widest text-teal-800 dark:text-teal-400">
-            HOW CARESATHI WORKS
+            SIGNATURE INNOVATIONS
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 dark:text-white tracking-tight">
-            Built for Real Indian Hospital Realities
+            Designed for Families, Built for Hospital Rooms
           </h2>
+          <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400">
+            Addressing overnight sleeplessness, remote family worry, and specialized clinical requirements.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Feature 1 */}
-          <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col justify-between space-y-4">
+          {/* Feature 1: Scheduled Night Vigil */}
+          <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col justify-between space-y-4 hover:border-teal-700/50 transition-colors">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 flex items-center justify-center">
+                <Moon className="w-6 h-6 text-amber-500" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">
+                  Overnight Shift
+                </span>
+                <span className="text-xs text-stone-400">8 PM – 8 AM</span>
+              </div>
+              <h3 className="font-bold text-lg text-stone-900 dark:text-white leading-snug">
+                1. Scheduled Night Vigil (Raat Ki Chowki)
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
+                Full 12-hour overnight vigilance. Sathis are pledged to remain awake, monitoring IV drip speed, urine bags, and patient restlessness with mandatory 90-minute live awake check-ins.
+              </p>
+            </div>
+            <div className="text-xs font-semibold text-teal-800 dark:text-teal-400 pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+              <span>90-Min Awake Heartbeat</span>
+              <span className="font-bold">₹1,800 Flat</span>
+            </div>
+          </div>
+
+          {/* Feature 2: Multi-Family Live Watch Link */}
+          <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col justify-between space-y-4 hover:border-teal-700/50 transition-colors">
             <div className="space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 flex items-center justify-center">
-                <Clock className="w-6 h-6" />
+                <Users className="w-6 h-6" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200">
+                  Shared Access
+                </span>
+                <span className="text-xs text-stone-400">WhatsApp One-Tap</span>
               </div>
               <h3 className="font-bold text-lg text-stone-900 dark:text-white leading-snug">
-                1. Hourly Bedside Presence
+                2. Multi-Family Live Watch Link
               </h3>
               <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                Zero monthly contracts or ayah broker fees. Pay only for the exact hours your parent needs assistance (₹100–₹180/hr) while you work or travel.
+                NRI children in the US/UK, working sons, and anxious siblings can follow bedside water intake, sponge baths, and doctor visits simultaneously from anywhere through a secure link.
               </p>
             </div>
-            <div className="text-xs font-semibold text-teal-800 dark:text-teal-400 pt-2 border-t border-stone-100 dark:border-stone-800">
-              Transparent UPI / Cash Settlement
+            <div className="text-xs font-semibold text-teal-800 dark:text-teal-400 pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+              <span>Synchronized Family Portal</span>
+              <span className="font-bold">Zero Setup</span>
             </div>
           </div>
 
-          {/* Feature 2 */}
-          <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col justify-between space-y-4">
+          {/* Feature 3: Sathi Skill Badges & Specialized Matching */}
+          <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col justify-between space-y-4 hover:border-teal-700/50 transition-colors">
             <div className="space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 flex items-center justify-center">
-                <KeyRound className="w-6 h-6" />
+                <Award className="w-6 h-6" />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                  Verified Accreditation
+                </span>
+                <span className="text-xs text-stone-400">Clinical Filters</span>
               </div>
               <h3 className="font-bold text-lg text-stone-900 dark:text-white leading-snug">
-                2. Ola/Uber Bedside OTP
+                3. Skill Badges & Specialized Matching
               </h3>
               <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                Duty time never begins until your CareSathi physically arrives at the patient's hospital bed and validates your 4-digit security OTP.
+                Precision matching by condition: GDA Clinical Assistant, Post-Op Mobility, Dementia & Elder Companion, or IV Vitals Vigilance. Only attendants holding verified skill badges are dispatched.
               </p>
             </div>
-            <div className="text-xs font-semibold text-amber-800 dark:text-amber-400 pt-2 border-t border-stone-100 dark:border-stone-800">
-              Guaranteed Physical Presence
-            </div>
-          </div>
-
-          {/* Feature 3 */}
-          <div className="bg-white dark:bg-stone-900 p-6 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-xs flex flex-col justify-between space-y-4">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 flex items-center justify-center">
-                <Activity className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-lg text-stone-900 dark:text-white leading-snug">
-                3. Live Logs & Nurse Alert
-              </h3>
-              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                Follow meals, water intake, and corridor walks on your mobile in real time, backed by 1-tap in-ward hospital emergency nurse coordination.
-              </p>
-            </div>
-            <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 pt-2 border-t border-stone-100 dark:border-stone-800">
-              Floating SOS Emergency Directory
+            <div className="text-xs font-semibold text-teal-800 dark:text-teal-400 pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between">
+              <span>Aadhaar + GDA Verified</span>
+              <span className="font-bold">100% Vetted</span>
             </div>
           </div>
 
@@ -313,22 +369,31 @@ export const HomePage: React.FC<HomePageProps> = ({
             Ready to arrange a bedside companion or earn as an attendant?
           </h3>
           <p className="text-xs sm:text-sm text-stone-400">
-            Join thousands of patient families and verified attendants across top Indian hospitals.
+            Sign in to start booking or join our network of verified hospital attendants across top Indian cities.
           </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <button
-            onClick={() => onOpenAuth('join')}
-            className="px-5 py-3 bg-teal-500 hover:bg-teal-400 text-stone-950 font-bold text-xs rounded-xl shadow-md transition-colors cursor-pointer"
-          >
-            Join CareSathi
-          </button>
+          {!isAuthenticated ? (
+            <button
+              onClick={() => onOpenAuth('join')}
+              className="px-5 py-3 bg-teal-500 hover:bg-teal-400 text-stone-950 font-bold text-xs rounded-xl shadow-md transition-colors cursor-pointer"
+            >
+              Sign In / Join Now
+            </button>
+          ) : (
+            <button
+              onClick={onBookForPatient}
+              className="px-5 py-3 bg-teal-500 hover:bg-teal-400 text-stone-950 font-bold text-xs rounded-xl shadow-md transition-colors cursor-pointer"
+            >
+              Open Booking Portal
+            </button>
+          )}
           <button
             onClick={onOpenSafety}
             className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
           >
-            Learn About Safety
+            Safety Protocol
           </button>
         </div>
       </section>
