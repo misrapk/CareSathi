@@ -9,6 +9,14 @@
 
 ---
 
+## 🎬 Product Walkthrough & Demo
+
+![CareSathi Platform Walkthrough Demo](./public/demo.gif)
+
+*Walkthrough showing Dark Mode toggle, Auth Gating, Scheduled Night Vigil selection, 100% Sathi Skill Badge matching radar, Bedside OTP handshake verification, Multi-Family Live Watch stream, and Attendant Partner Console.*
+
+---
+
 ## 📌 Problem & Vision
 
 In Indian hospitals, admitted patients often require non-stop bedside assistance—for feeding, hydration, washroom mobility, and coordination with nurses. However, working family members often cannot be physically present 24/7 due to urgent office commitments, travel, or childcare.
