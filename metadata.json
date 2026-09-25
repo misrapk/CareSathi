@@ -1,0 +1,6 @@
+{
+  "name": "CareSathi - On-Demand Hospital Patient Attendant & Bedside Companion",
+  "description": "On-demand bedside hospital patient attendants in India. Hourly compassionate caregivers with OTP verification, hospital ward dispatch, and live duty tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
